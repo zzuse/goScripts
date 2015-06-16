@@ -1,2 +1,2 @@
 # shellScripts
-my usefule shell scripts
+my useful shell scripts
