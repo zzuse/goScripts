@@ -21,7 +21,7 @@ const (
 )
 
 var (
-    numPoller     = flag.Int("p", 2, "page loader num")
+    numPoller     = flag.Int("p", 1, "page loader num")
     numDownloader = flag.Int("d", 5, "image downloader num")
     savePath      = flag.String("s", "./downloads/", "save path")
     imgExp        = regexp.MustCompile(`<a\s+class="img"\s+href="[a-zA-Z0-9_\-/:\.%?=]+">[\r\n\t\s]*<img\s+src="([^"'<>]*)"\s*/?>`)
@@ -61,9 +61,11 @@ func main() {
 }
 
 func (ctx *sexyContext) start() {
+    fmt.Printf("Poller%d\n", *numPoller)
     for i := 0; i < *numPoller; i++ {
         go ctx.downloadPage()
     }
+    fmt.Printf("download%d\n", *numDownloader)
     waits := sync.WaitGroup{}
     for i := 0; i < *numDownloader; i++ {
         go func() {
@@ -126,12 +128,14 @@ func (ctx *sexyContext) parsePage(body []byte) {
     if idx == nil {
         ctx.pollerDone <- struct{}{}
     } else {
+        fmt.Printf("%d\n", len(idx))
         for _, n := range idx {
             data := GetUrl(n[1])
             if len(data) > 10 {
                 body := string(data)
                 part := regexp.MustCompile(`bigimgsrc="(.*)"`)
                 match := part.FindAllStringSubmatch(body, -1)
+                fmt.Printf("%d\n", len(match))
 
                 for _, v := range match {
                     str := strings.Split(v[1], "/")
@@ -183,6 +187,7 @@ func (ctx *sexyContext) downloadImage() {
                 isDone = true
             }
         case image := <-ctx.imageChan:
+            fmt.Printf("never here \n")
             fmt.Printf("start download %s\n", image.url)
             atomic.AddInt32(&ctx.okCounter, 1)
             resp, err := http.Get(image.url)
