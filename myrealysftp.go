@@ -57,29 +57,48 @@ func main() {
 	}
 	defer c.Close()
 
-	w, err := c.OpenFile("/unibss/tstusers/tiansl/zhaoyf/b", syscall.O_CREAT|syscall.O_APPEND|syscall.O_RDWR)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer w.Close()
-	log.Printf("wrote aa " )
+    //TODO: self logic, a bunch of local dirs
+    //after consistent hash check
+    //maybe need regexp to match Files
+    //replace hard code dir from configure 
+    d, err := os.Open("/home/zz/Scripts/github/goScripts/")
+    if err!= nil {
+		log.Fatalf("unable to open local dir : %v", err)
+    }
+    defer d.Close()
+    fileList,_ := d.Readdir(100)
+    for _,readFile := range fileList {
+        if readFile.IsDir() == true {
+            continue;
+        }
+        log.Printf("writing name %s ", readFile.Name())
+        f, err := os.Open(readFile.Name())
+        if err != nil {
+            log.Fatal(err)
+        }
+        defer f.Close()
+        info, _ := f.Stat();
 
-	f, err := os.Open("/home/zz/Scripts/github/goScripts/a")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer f.Close()
+        //TODO: replace hard code dir to a routed configured dir 
+        outputFile:="/unibss/tstusers/tiansl/zhaoyf/"+readFile.Name()
+        w, err := c.OpenFile(outputFile, syscall.O_CREAT|syscall.O_TRUNC|syscall.O_RDWR)
+        if err != nil {
+            log.Fatal(err)
+        }
+        defer w.Close()
+        //log.Printf("wrote aa " )
 
-	const size int64 = 1e9
+        const size int64 = 1e9
 
-	log.Printf("writing %v bytes", size)
-	t1 := time.Now()
-	n, err := io.Copy(w, io.LimitReader(f, size))
-	if err != nil {
-		log.Fatal(err)
-	}
-	if n != size {
-		log.Fatalf("copy: expected %v bytes, got %d", size, n)
-	}
-	log.Printf("wrote %v bytes in %s", size, time.Since(t1))
+        log.Printf("writing %v bytes", info.Size())
+        t1 := time.Now()
+        n, err := io.Copy(w, io.LimitReader(f, info.Size()))
+        if err != nil {
+            log.Fatal(err)
+        }
+        if n != info.Size() {
+            log.Fatalf("copy: expected %v bytes, got %d", info.Size(), n)
+        }
+        log.Printf("wrote %v bytes in %s", info.Size(), time.Since(t1))
+    }
 }
