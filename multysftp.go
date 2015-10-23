@@ -150,6 +150,7 @@ func dial(HOST string,USER string,PASS string,PORT int,SIZE int,LOCALDIR string,
             }
             log.Printf("wrote %v bytes in %s", info.Size(), time.Since(t1))
             os.Remove(LOCALDIR+readFile.Name())
+            f.Close()
             log.Printf("local file removed %s", readFile.Name())
         }
     }
