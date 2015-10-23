@@ -19,11 +19,14 @@ import (
 )
 
 var (
-	USER = flag.String("user", os.Getenv("USER"), "ssh username")
-	HOST = flag.String("host", "localhost", "ssh server hostname")
+	//USER = flag.String("user", os.Getenv("USER"), "ssh username")
+	USER = flag.String("user", "tiansl", "ssh username")
+	HOST = flag.String("host", "192.130.12.38", "ssh server hostname")
 	PORT = flag.Int("port", 22, "ssh server port")
-	PASS = flag.String("pass", os.Getenv("SOCKSIE_SSH_PASSWORD"), "ssh password")
+	PASS = flag.String("p", os.Getenv("SOCKSIE_SSH_PASSWORD"), "ssh password")
 	SIZE = flag.Int("s", 1<<15, "set max packet size")
+	FILE = flag.String("f", "a.out", "upload filename")
+	DIR  = flag.String("d", "./", "upload dirname")
 )
 
 func init() {
@@ -57,11 +60,9 @@ func main() {
 	}
 	defer c.Close()
 
-    //TODO: self logic, a bunch of local dirs
-    //after consistent hash check
+    //TODO: a bunch of local dirs
     //maybe need regexp to match Files
-    //replace hard code dir from configure 
-    d, err := os.Open("/home/zz/Scripts/github/goScripts/")
+    d, err := os.Open(*DIR)
     if err!= nil {
 		log.Fatalf("unable to open local dir : %v", err)
     }
@@ -69,6 +70,9 @@ func main() {
     fileList,_ := d.Readdir(100)
     for _,readFile := range fileList {
         if readFile.IsDir() == true {
+            continue;
+        }
+        if readFile.Name() != *FILE {
             continue;
         }
         log.Printf("writing name %s ", readFile.Name())
@@ -80,13 +84,12 @@ func main() {
         info, _ := f.Stat();
 
         //TODO: replace hard code dir to a routed configured dir 
-        outputFile:="/unibss/tstusers/tiansl/zhaoyf/"+readFile.Name()
+        outputFile:="/unibss/tstusers/tiansl/zhangzhen/"+readFile.Name()
         w, err := c.OpenFile(outputFile, syscall.O_CREAT|syscall.O_TRUNC|syscall.O_RDWR)
         if err != nil {
             log.Fatal(err)
         }
         defer w.Close()
-        //log.Printf("wrote aa " )
 
         const size int64 = 1e9
 

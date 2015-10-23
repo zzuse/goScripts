@@ -65,6 +65,7 @@ func main() {
     }
 
     response := make(chan string)
+    //TODO: not transfer on same machine
 
     USER := "bill01"
     PASS := "bill01app"
@@ -124,17 +125,19 @@ func dial(HOST string,USER string,PASS string,PORT int,SIZE int,LOCALDIR string,
             log.Printf("writing name %s ", readFile.Name())
             f, err := os.Open(LOCALDIR+readFile.Name())
             if err != nil {
+                f.Close()
                 log.Fatal(err)
             }
-            defer f.Close()
+            //defer f.Close()
             info, _ := f.Stat();
 
             outputFile:=REMOTEDIR+readFile.Name()
             w, err := c.OpenFile(outputFile, syscall.O_CREAT|syscall.O_TRUNC|syscall.O_RDWR)
             if err != nil {
+                w.Close()
                 log.Fatal(err)
             }
-            defer w.Close()
+            //defer w.Close()
             //log.Printf("wrote aa " )
 
             const size int64 = 1e9
@@ -143,14 +146,19 @@ func dial(HOST string,USER string,PASS string,PORT int,SIZE int,LOCALDIR string,
             t1 := time.Now()
             n, err := io.Copy(w, io.LimitReader(f, info.Size()))
             if err != nil {
+                f.Close()
+                w.Close()
                 log.Fatal(err)
             }
             if n != info.Size() {
+                f.Close()
+                w.Close()
                 log.Fatalf("copy: expected %v bytes, got %d", info.Size(), n)
             }
             log.Printf("wrote %v bytes in %s", info.Size(), time.Since(t1))
             os.Remove(LOCALDIR+readFile.Name())
             f.Close()
+            w.Close()
             log.Printf("local file removed %s", readFile.Name())
         }
     }
