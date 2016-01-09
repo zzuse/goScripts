@@ -133,7 +133,8 @@ func (ctx *sexyContext) parsePage(body []byte) {
             str := strings.Split(url, "/")
             length := len(str)
             imgeUrl := url
-            filename := str[length-1]
+            tmpfilename := strings.Split(str[length-1], "?")
+            filename := tmpfilename[0]
             image := &image{url: imgeUrl, filename: filename}
             //atomic.AddInt32(&ctx.imageCounter, 1)
             //ctx.imageChan <- image
