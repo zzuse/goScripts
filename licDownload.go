@@ -88,7 +88,6 @@ func (ctx *sexyContext) downloadPage() {
         select {
         case <-ctx.pollerDone:
             isDone = true
-            continue
         default:
             url := fmt.Sprintf("%s", ctx.rootURL)
             fmt.Printf("download page %s\n", url)
