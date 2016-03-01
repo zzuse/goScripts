@@ -23,18 +23,18 @@ func Usage() {
     fmt.Printf(`Usage of multissh:
     -c string
     To perform a shell command on all the blade
-    Be careful use this for rm command or something like that
-    Don't use this do harmful things
+    Be careful use this for rm command or something like that.
     `)
+    fmt.Println("Don't use this do harmful things, or will be punished");
     os.Exit(1)
 }
 
 func main() {
 	HOSTs := []string {
-        "134.160.36.66",
-        "134.160.36.67",
-        "134.160.36.68",
-        "134.160.36.69",
+//        "134.160.36.66",
+//        "134.160.36.67",
+//        "134.160.36.68",
+//        "134.160.36.69",
         "134.160.36.101",
         "134.160.36.102",
         "134.160.36.103",
@@ -46,10 +46,10 @@ func main() {
     }
 
 	PASSs := []string {
-        "asiainfo",
-        "asiainfo",
-        "asiainfo",
-        "asiainfo",
+//        "asiainfo",
+//        "asiainfo",
+//        "asiainfo",
+//        "asiainfo",
         "bill01app",
         "bill01app",
         "bill01app",
