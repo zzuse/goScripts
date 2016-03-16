@@ -16,11 +16,12 @@ return &redis.Pool{
                     }
                     return c, err
             },
-    } 
+    }
 }
 
 var pool = newPool()
 
+//export Output
 func Output() {
         c := pool.Get()
         defer c.Close()
