@@ -1,86 +1,67 @@
-
 package main
 
 import (
-    "fmt"
-    "log"
-	"net"
-    "os"
-    "flag"
-    "golang.org/x/crypto/ssh"
+	"bufio"
+	"flag"
+	"fmt"
+	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
+	"log"
+	"net"
+	"os"
 )
 
 var (
-    shellCmd string
+	shellCmd string
 )
 
 func init() {
-    flag.StringVar(&shellCmd, "c", "", "To perform a shell command.")
+	flag.StringVar(&shellCmd, "c", "", "To perform a shell command.")
 }
 
 func Usage() {
-    fmt.Printf(`Usage of multissh:
+	fmt.Printf(`Usage of multissh:
     -c string
     To perform a shell command on all the blade
     Be careful use this for rm command or something like that.
     `)
-    fmt.Println("Don't use this do harmful things, or will be punished");
-    os.Exit(1)
+	fmt.Println("Don't use this do harmful things")
+	os.Exit(1)
 }
 
 func main() {
-	HOSTs := []string {
-//        "134.160.36.66",
-//        "134.160.36.67",
-//        "134.160.36.68",
-//        "134.160.36.69",
-        "134.160.36.101",
-        "134.160.36.102",
-        "134.160.36.103",
-        "134.160.36.104",
-        "134.160.36.105",
-        "134.160.36.106",
-        "134.160.36.107",
-        "134.160.36.108",
-    }
+	//here need do something nusty configure like json.
+	HOSTs := []string{
+		"135.64.20.143",
+		"135.64.20.131",
+	}
 
-	PASSs := []string {
-//        "asiainfo",
-//        "asiainfo",
-//        "asiainfo",
-//        "asiainfo",
-        "bill01app",
-        "bill01app",
-        "bill01app",
-        "bill01app",
-        "bill01app",
-        "bill01app",
-        "bill01app",
-        "bill01app",
-    }
-    flag.Parse()
-    if os.Args == nil || shellCmd == "" {
-        Usage()
-    }
+	PASSs := []string{
+		"asiainfo",
+		"asiainfo",
+	}
+	flag.Parse()
+	if os.Args == nil || shellCmd == "" {
+		Usage()
+	}
 
-    response := make(chan string)
-    //TODO: not dial on same machine
+	response := make(chan string)
+	//TODO: not dial on same machine
 
-    USER := "bill01"
-    for i, _:= range HOSTs {
-        go dial(HOSTs[i],USER,PASSs[i],22,1<<15,shellCmd,response)
-    }
-    for j := 0; j<len(HOSTs);j++ {
-        select {
-        case res:= <-response:
-            fmt.Println(res)
-        }
-    }
-    close(response)
+	USER := "bill01"
+	for i, _ := range HOSTs {
+		go dial(HOSTs[i], USER, PASSs[i], 22, 1<<15, shellCmd, response)
+	}
+	for j := 0; j < len(HOSTs); j++ {
+		select {
+		case res := <-response:
+			fmt.Println(res)
+		}
+	}
+	close(response)
 }
 
-func dial(HOST string,USER string,PASS string,PORT int,SIZE int,shellCmd string,res chan string) {
+func dial(HOST string, USER string, PASS string, PORT int, SIZE int, shellCmd string, res chan string) {
 	var auths []ssh.AuthMethod
 	if aconn, err := net.Dial("unix", os.Getenv("SSH_AUTH_SOCK")); err == nil {
 		auths = append(auths, ssh.PublicKeysCallback(agent.NewClient(aconn).Signers))
@@ -99,19 +80,32 @@ func dial(HOST string,USER string,PASS string,PORT int,SIZE int,shellCmd string,
 	}
 	defer conn.Close()
 
-    // Create a session
-    session, err := conn.NewSession()
-    if err != nil {
-        log.Fatalf("unable to create session: %s", err)
-    }
-    defer session.Close()
+	// Create a session
+	session, err := conn.NewSession()
+	if err != nil {
+		log.Fatalf("unable to create session: %s", err)
+	}
+	defer session.Close()
 
-    b, err := session.Output(shellCmd)
-    if err != nil {
-        log.Fatalf("failed to execute: %s", err)
-    }
-    log.Println("--------------------------------------")
-    log.Println("Output: ",HOST)
-    log.Println(string(b))
-	res <- "done"+HOST
+	running := true
+	for running {
+		if shellCmd == "exit" {
+			running = false
+		}
+		log.Println("--------------------------------------")
+		log.Println(shellCmd)
+		b, err := session.Output(shellCmd)
+		if err != nil {
+			log.Fatalf("failed to execute: %s", err)
+		}
+		log.Println("HOST: ", HOST)
+		log.Println(string(b))
+		bio := bufio.NewReader(os.Stdin)
+		line, _, err := bio.ReadLine()
+		if err != nil {
+			log.Fatalf("unable to execute to [%s] ", line)
+		}
+		shellCmd = string(line)
+	}
+	res <- "done" + HOST
 }

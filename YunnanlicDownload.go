@@ -7,7 +7,6 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	//  "net/url"
 	"os"
 	"regexp"
 	"strings"
@@ -17,15 +16,15 @@ import (
 )
 
 const (
-	bufferSize = 128 * 1024 //写图片文件的缓冲区大小
+	bufferSize = 1280 * 1024 //写图片文件的缓冲区大小
 )
 
 var (
-	numPoller     = flag.Int("p", 1, "page loader num")
-	numDownloader = flag.Int("d", 0, "image downloader num")
-	savePath      = flag.String("s", "./downloads/", "save path")
-	imgExp        = regexp.MustCompile(`<a\s+class="img"\s+href="[a-zA-Z0-9_\-/:\.%?=]+">[\r\n\t\s]*<img\s+src="([^"'<>]*)"\s*/?>`)
-	img2Exp       = regexp.MustCompile(`<a href="(.*)" class="download-link">`)
+	numPoller = flag.Int("p", 1, "page loader num")
+	//numDownloader = flag.Int("d", 0, "image downloader num")
+	savePath = flag.String("s", "./downloads/", "save path")
+	//imgExp        = regexp.MustCompile(`<a\s+class="img"\s+href="[a-zA-Z0-9_\-/:\.%?=]+">[\r\n\t\s]*<img\s+src="([^"'<>]*)"\s*/?>`)
+	img2Exp = regexp.MustCompile(`<a href="(.*)" class="download-link">`)
 )
 
 type image struct {
@@ -66,15 +65,8 @@ func (ctx *sexyContext) start() {
 	for i := 0; i < *numPoller; i++ {
 		go ctx.downloadPage()
 	}
-	fmt.Printf("download%d\n", *numDownloader)
+	//fmt.Printf("download%d\n", *numDownloader)
 	waits := sync.WaitGroup{}
-	for i := 0; i < *numDownloader; i++ {
-		go func() {
-			waits.Add(1)
-			ctx.downloadImage()
-			waits.Done()
-		}()
-	}
 
 	<-ctx.pollerDone
 	ctx.done = true
@@ -108,22 +100,10 @@ func (ctx *sexyContext) downloadPage() {
 	}
 }
 
-func GetUrl(url string) []byte {
-	ret, err := http.Get(url)
-	if err != nil {
-		status := map[string]string{}
-		status["status"] = "400"
-		status["url"] = url
-		panic(status)
-	}
-	body := ret.Body
-	data, _ := ioutil.ReadAll(body)
-	return data
-}
-
 func (ctx *sexyContext) parsePage(body []byte) {
 	//fmt.Printf("%s\n", string(body))
 	body2 := string(body)
+	//body is like <a href="/cgi-bin/cvsweb/cvsweb.cgi/~checkout~/products/unibss/binary/license/Attic/yunnan.lic?rev=1.1.2.30;content-type=application%2Foctet-stream" class="download-link">download</a>
 	idx := img2Exp.FindAllStringSubmatch(body2, -1)
 	if idx == nil {
 		ctx.pollerDone <- struct{}{}
@@ -134,6 +114,7 @@ func (ctx *sexyContext) parsePage(body []byte) {
 			str := strings.Split(url, "/")
 			length := len(str)
 			imgeUrl := url
+			//get filename by "?"
 			tmpfilename := strings.Split(str[length-1], "?")
 			filename := tmpfilename[0]
 			image := &image{url: imgeUrl, filename: filename}
@@ -173,45 +154,4 @@ func (ctx *sexyContext) parsePage(body []byte) {
 			}
 		}
 	}
-}
-func (ctx *sexyContext) downloadImage() {
-	isDone := false
-	for !isDone {
-		select {
-		case <-ctx.pollerDone:
-			if len(ctx.imageChan) == 0 {
-				isDone = true
-			}
-		case image := <-ctx.imageChan:
-			fmt.Printf("never here \n")
-			fmt.Printf("start download %s\n", image.url)
-			atomic.AddInt32(&ctx.okCounter, 1)
-			resp, err := http.Get(image.url)
-			if err != nil {
-				fmt.Printf("failed to load url %s with error %v\n", image.url, err)
-			} else {
-				defer resp.Body.Close()
-				saveFile := *savePath + image.filename //path.Base(imgUrl)
-
-				img, err := os.Create(saveFile)
-				if err != nil {
-					fmt.Print(err)
-
-				} else {
-					defer img.Close()
-
-					imgWriter := bufio.NewWriterSize(img, bufferSize)
-
-					_, err = io.Copy(imgWriter, resp.Body)
-					if err != nil {
-						fmt.Print(err)
-
-					}
-					imgWriter.Flush()
-				}
-
-			}
-		}
-	}
-
 }
