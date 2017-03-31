@@ -1,7 +1,7 @@
 package main
 
 import (
-	"bufio"
+	//"bufio"
 	"flag"
 	"fmt"
 	"golang.org/x/crypto/ssh"
@@ -33,10 +33,12 @@ func main() {
 	//here need do something nusty configure like json.
 	HOSTs := []string{
 		"135.64.20.143",
-		"135.64.20.131",
+		"135.64.20.144",
+		"135.64.20.145",
 	}
 
 	PASSs := []string{
+		"asiainfo",
 		"asiainfo",
 		"asiainfo",
 	}
@@ -86,26 +88,29 @@ func dial(HOST string, USER string, PASS string, PORT int, SIZE int, shellCmd st
 		log.Fatalf("unable to create session: %s", err)
 	}
 	defer session.Close()
+	session.Stdout = os.Stdout
+	session.Stderr = os.Stderr
+	session.Stdin = os.Stdin
 
 	running := true
 	for running {
-		if shellCmd == "exit" {
-			running = false
-		}
 		log.Println("--------------------------------------")
+		log.Println("HOST: ", HOST)
 		log.Println(shellCmd)
-		b, err := session.Output(shellCmd)
+		//session.Shell()
+		//session.Wait()
+		//b, err := session.Output(shellCmd)
+
+		err := session.Run(shellCmd)
 		if err != nil {
 			log.Fatalf("failed to execute: %s", err)
 		}
-		log.Println("HOST: ", HOST)
-		log.Println(string(b))
-		bio := bufio.NewReader(os.Stdin)
-		line, _, err := bio.ReadLine()
-		if err != nil {
-			log.Fatalf("unable to execute to [%s] ", line)
+		shellCmd = string("exit")
+		log.Println("HOST: ", shellCmd, HOST)
+		log.Println("--------------------------------------")
+		if shellCmd == "exit" {
+			running = false
 		}
-		shellCmd = string(line)
 	}
 	res <- "done" + HOST
 }
