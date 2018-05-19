@@ -1,0 +1,7 @@
+BenchmarkFib-4   	   30000	     52698 ns/op
+BenchmarkFib-4   	   30000	     52637 ns/op
+BenchmarkFib-4   	   30000	     52218 ns/op
+BenchmarkFib-4   	   30000	     51410 ns/op
+BenchmarkFib-4   	   30000	     51354 ns/op
+PASS
+ok  	_/Users/zz/Documents/Code/Company/Lang/GoLang/src/github.com/goScripts/fib	10.441s
